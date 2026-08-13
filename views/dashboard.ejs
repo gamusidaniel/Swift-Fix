@@ -1,0 +1,67 @@
+<%- include('partials/head', { title: 'Dashboard' }) %>
+<%- include('partials/navbar') %>
+
+<div class="page-header">
+    <div>
+        <div class="page-title">Welcome back, <%= currentUser.first_name || currentUser.username %></div>
+        <div class="page-subtitle">Here's what's happening with your tickets</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/tickets/new" class="btn btn-primary"><i class="fas fa-plus me-1"></i> New Ticket</a>
+        <% if (isITStaff) { %>
+        <a href="/tickets/assigned" class="btn btn-outline-secondary"><i class="fas fa-tasks me-1"></i> Assigned</a>
+        <% } %>
+    </div>
+</div>
+
+<%- include('partials/alerts', { success, error: null, errors: null }) %>
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-blue"><div><div class="stat-label">Total Tickets</div><div class="stat-value"><%= stats.total || 0 %></div></div><div class="stat-icon-wrap si-blue"><i class="fas fa-ticket-alt"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-amber"><div><div class="stat-label">Open</div><div class="stat-value"><%= stats.open || 0 %></div></div><div class="stat-icon-wrap si-amber"><i class="fas fa-clock"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-indigo"><div><div class="stat-label">In Progress</div><div class="stat-value"><%= stats.in_progress || 0 %></div></div><div class="stat-icon-wrap si-indigo"><i class="fas fa-spinner"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-green"><div><div class="stat-label">Resolved</div><div class="stat-value"><%= stats.resolved || 0 %></div></div><div class="stat-icon-wrap si-green"><i class="fas fa-check-circle"></i></div></div></div>
+</div>
+
+<% if (isITStaff) { %>
+<div class="section-card mb-4">
+    <div class="section-header"><span class="section-title">Quick Actions</span></div>
+    <div class="section-body d-flex flex-wrap gap-2">
+        <a href="/tickets/unassigned" class="btn btn-outline-primary btn-sm"><i class="fas fa-inbox me-1"></i>Unassigned Tickets</a>
+        <a href="/admin" class="btn btn-outline-primary btn-sm"><i class="fas fa-cogs me-1"></i>Admin Panel</a>
+    </div>
+</div>
+<% } %>
+
+<div class="section-card mb-4">
+    <div class="section-header"><span class="section-title">Recent Tickets</span></div>
+    <% if (tickets.length === 0) { %>
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <h5>No tickets yet</h5>
+        <p>Create your first support ticket to get started.</p>
+        <a href="/tickets/new" class="btn btn-primary"><i class="fas fa-plus me-1"></i>New Ticket</a>
+    </div>
+    <% } else { %>
+    <div class="tbl-wrap">
+        <table class="ms-table">
+            <thead><tr><th>Ticket #</th><th>Title</th><th>Priority</th><th>Status</th><th>Created</th><th></th></tr></thead>
+            <tbody>
+                <% tickets.forEach(t => { %>
+                <tr>
+                    <td><span class="ticket-num"><%= t.ticket_number %></span></td>
+                    <td><a href="/tickets/<%= t.id %>" class="ticket-link"><%= t.title %></a></td>
+                    <td><span class="badge-pill p-<%= t.priority %>"><%= t.priority.charAt(0).toUpperCase() + t.priority.slice(1) %></span></td>
+                    <td><span class="badge-pill s-<%= t.status %>"><%= t.status.replace('_',' ') %></span></td>
+                    <td><%= new Date(t.created_at).toLocaleDateString() %></td>
+                    <td><a href="/tickets/<%= t.id %>" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a></td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+    <% } %>
+</div>
+
+<%- include('partials/footer') %>
+</body></html>

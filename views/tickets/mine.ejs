@@ -1,0 +1,110 @@
+<%- include('../partials/head', { title: 'My Tickets' }) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-header">
+    <div>
+        <div class="page-title"><i class="fas fa-ticket-alt me-2" style="color:var(--brand);"></i>My Tickets</div>
+        <div class="page-subtitle">Track and manage all your support requests</div>
+    </div>
+    <a href="/tickets/new" class="btn btn-primary"><i class="fas fa-plus me-1"></i> New Ticket</a>
+</div>
+
+<%- include('../partials/alerts', { success, error, errors: null }) %>
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-blue"><div><div class="stat-label">Total</div><div class="stat-value"><%= stats.total || 0 %></div></div><div class="stat-icon-wrap si-blue"><i class="fas fa-ticket-alt"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-amber"><div><div class="stat-label">Open</div><div class="stat-value"><%= stats.open || 0 %></div></div><div class="stat-icon-wrap si-amber"><i class="fas fa-clock"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-indigo"><div><div class="stat-label">In Progress</div><div class="stat-value"><%= stats.in_progress || 0 %></div></div><div class="stat-icon-wrap si-indigo"><i class="fas fa-spinner"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-green"><div><div class="stat-label">Resolved</div><div class="stat-value"><%= stats.resolved || 0 %></div></div><div class="stat-icon-wrap si-green"><i class="fas fa-check-circle"></i></div></div></div>
+</div>
+
+<div class="section-card mb-4">
+    <div class="section-body" style="padding:14px 20px;">
+        <form method="GET" action="/tickets/mine" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="all" <%= filters.status==='all'?'selected':'' %>>All Statuses</option>
+                    <% ['open','in_progress','resolved','closed'].forEach(s => { %>
+                    <option value="<%= s %>" <%= filters.status===s?'selected':'' %>><%= s.replace('_',' ') %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Priority</label>
+                <select name="priority" class="form-select form-select-sm">
+                    <option value="all" <%= filters.priority==='all'?'selected':'' %>>All Priorities</option>
+                    <% PRIORITIES.forEach(p => { %>
+                    <option value="<%= p %>" <%= filters.priority===p?'selected':'' %>><%= p %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Category</label>
+                <select name="category" class="form-select form-select-sm">
+                    <option value="all" <%= filters.category==='all'?'selected':'' %>>All Categories</option>
+                    <% CATEGORIES.forEach(c => { %>
+                    <option value="<%= c %>" <%= filters.category===c?'selected':'' %>><%= c %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fas fa-filter me-1"></i> Filter</button>
+            </div>
+            <% if (filters.status!=='all'||filters.priority!=='all'||filters.category!=='all') { %>
+            <div class="col-md-1"><a href="/tickets/mine" class="btn btn-outline-secondary btn-sm w-100"><i class="fas fa-times"></i></a></div>
+            <% } %>
+        </form>
+    </div>
+</div>
+
+<div class="section-card mb-4">
+    <div class="section-header"><span class="section-title">Tickets <span style="font-weight:400; color:var(--text-3); font-size:.8rem;">(<%= tickets.length %>)</span></span></div>
+    <% if (tickets.length === 0) { %>
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <h5>No tickets found</h5>
+        <p>Try adjusting your filters or create a new ticket.</p>
+        <a href="/tickets/new" class="btn btn-primary"><i class="fas fa-plus me-1"></i>New Ticket</a>
+    </div>
+    <% } else { %>
+    <div class="tbl-wrap">
+        <table class="ms-table" id="ticketsTable">
+            <thead><tr><th>Ticket #</th><th>Title</th><th>Category</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Created</th><th></th></tr></thead>
+            <tbody>
+                <% tickets.forEach(ticket => { %>
+                <tr>
+                    <td><span class="ticket-num"><%= ticket.ticket_number %></span></td>
+                    <td>
+                        <a href="/tickets/<%= ticket.id %>" class="ticket-link"><%= ticket.title %></a>
+                        <% if (ticket.due_date && new Date(ticket.due_date) < new Date() && !['resolved','closed'].includes(ticket.status)) { %>
+                        <span class="overdue-pill">Overdue</span>
+                        <% } %>
+                    </td>
+                    <td><span class="cat-pill"><%= ticket.category %></span></td>
+                    <td><span class="badge-pill p-<%= ticket.priority %>"><%= ticket.priority %></span></td>
+                    <td><span class="badge-pill s-<%= ticket.status %>"><%= ticket.status.replace('_',' ') %></span></td>
+                    <td style="color:var(--text-2);">
+                        <% if (ticket.assigned_username) { %><%= ticket.assigned_first_name %> <%= ticket.assigned_last_name %>
+                        <% } else { %><span style="color:var(--text-3);font-style:italic;">Unassigned</span><% } %>
+                    </td>
+                    <td style="color:var(--text-2);white-space:nowrap;"><%= new Date(ticket.created_at).toLocaleDateString() %></td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="/tickets/<%= ticket.id %>" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a>
+                            <% if (ticket.status==='open') { %>
+                            <a href="/tickets/<%= ticket.id %>/edit" class="btn btn-outline-secondary btn-sm"><i class="fas fa-edit"></i></a>
+                            <% } %>
+                        </div>
+                    </td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+    <% } %>
+</div>
+
+<%- include('../partials/footer') %>
+<script>$(()=>{ if ($('#ticketsTable').length) $('#ticketsTable').DataTable({ pageLength:25, order:[[0,'desc']], language:{search:'_INPUT_',searchPlaceholder:'Search tickets…'} }); });</script>
+</body></html>

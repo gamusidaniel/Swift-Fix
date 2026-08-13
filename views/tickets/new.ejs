@@ -1,0 +1,124 @@
+<%- include('../partials/head', { title: 'Create Ticket' }) %>
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.css" rel="stylesheet">
+<style>
+.priority-radio { display: flex; flex-direction: column; gap: 8px; }
+.priority-option { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-lg); cursor: pointer; }
+.priority-option:has(input:checked) { border-color: var(--brand); background: var(--brand-light); }
+.priority-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.dot-low { background: var(--success); } .dot-medium { background: #f59e0b; } .dot-high { background: var(--danger); } .dot-urgent { background: #9d174d; }
+.priority-label { font-size: .83rem; font-weight: 600; } .priority-desc { font-size: .75rem; color: var(--text-3); }
+.sla-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.sla-item { text-align: center; padding: 16px 10px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.sla-dot { width: 12px; height: 12px; border-radius: 50%; margin: 0 auto 8px; }
+.sla-name { font-size: .8rem; font-weight: 700; } .sla-row { font-size: .72rem; color: var(--text-2); }
+</style>
+<%- include('../partials/navbar') %>
+
+<div class="page-header">
+    <div>
+        <div class="page-title"><i class="fas fa-plus-circle me-2" style="color:var(--brand);"></i>Create New Ticket</div>
+        <div class="page-subtitle">Submit a new IT support request</div>
+    </div>
+    <a href="/dashboard" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Back</a>
+</div>
+
+<%- include('../partials/alerts', { success: null, error: null, errors }) %>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="section-card">
+            <div class="section-header"><span class="section-title">Ticket Details</span></div>
+            <div class="section-body">
+                <form method="POST" action="/tickets/new" id="ticketForm" enctype="multipart/form-data">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Title *</label>
+                            <input type="text" class="form-control" name="title" required minlength="5" maxlength="200"
+                                   placeholder="Brief description of your issue" value="<%= formValues.title || '' %>">
+                            <div class="form-text">Be specific about the issue</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Category *</label>
+                            <select class="form-select" name="category" required>
+                                <option value="">Select…</option>
+                                <% CATEGORIES.forEach(cat => { %>
+                                <option value="<%= cat %>" <%= formValues.category===cat?'selected':'' %>><%= cat.charAt(0).toUpperCase()+cat.slice(1) %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description *</label>
+                        <textarea class="form-control" name="description" id="description" rows="7" required
+                                  placeholder="Describe the issue, steps to reproduce, error messages…"><%= formValues.description || '' %></textarea>
+                        <div class="form-text">Include error messages and what you've already tried</div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Priority *</label>
+                            <div class="priority-radio">
+                                <% const pdesc = {low:'Minor issue, no immediate impact', medium:'Important but not critical', high:'Significant impact on work', urgent:'Critical — complete work stoppage'}; %>
+                                <% PRIORITIES.forEach(p => { %>
+                                <label class="priority-option">
+                                    <input class="form-check-input" type="radio" name="priority" value="<%= p %>" <%= (formValues.priority||'medium')===p?'checked':'' %>>
+                                    <div class="priority-dot dot-<%= p %>"></div>
+                                    <div><div class="priority-label"><%= p.charAt(0).toUpperCase()+p.slice(1) %></div><div class="priority-desc"><%= pdesc[p] %></div></div>
+                                </label>
+                                <% }) %>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Attachments <span style="font-weight:400;color:var(--text-3);">(optional)</span></label>
+                            <input type="file" class="form-control" name="attachments" multiple id="attachments">
+                            <div class="form-text">Screenshots, logs, or related files — max 5 MB each</div>
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle"></i>
+                                <div><strong>What happens next?</strong>
+                                    <ul class="mb-0 mt-1" style="font-size:.78rem; padding-left:16px;">
+                                        <li>You'll receive a ticket number for reference</li>
+                                        <li>IT staff will be notified immediately</li>
+                                        <li>Track progress under "My Tickets"</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3" style="border-top:1px solid var(--border);">
+                        <a href="/dashboard" class="btn btn-outline-secondary"><i class="fas fa-times me-1"></i>Cancel</a>
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-paper-plane me-2"></i>Submit Ticket</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="section-card">
+            <div class="section-header"><span class="section-title"><i class="fas fa-stopwatch me-2"></i>SLA Response Times</span></div>
+            <div class="section-body" style="padding:16px;">
+                <div class="sla-grid">
+                    <div class="sla-item"><div class="sla-dot" style="background:#9d174d;"></div><div class="sla-name">Urgent</div><div class="sla-row">Response: 2h</div><div class="sla-row">Resolve: 8h</div></div>
+                    <div class="sla-item"><div class="sla-dot" style="background:var(--danger);"></div><div class="sla-name">High</div><div class="sla-row">Response: 8h</div><div class="sla-row">Resolve: 24h</div></div>
+                    <div class="sla-item"><div class="sla-dot" style="background:#f59e0b;"></div><div class="sla-name">Medium</div><div class="sla-row">Response: 24h</div><div class="sla-row">Resolve: 72h</div></div>
+                    <div class="sla-item"><div class="sla-dot" style="background:var(--success);"></div><div class="sla-name">Low</div><div class="sla-row">Response: 48h</div><div class="sla-row">Resolve: 120h</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs5.min.js"></script>
+<script>
+$(()=>{
+    $('#description').summernote({ height:220, toolbar:[['style',['bold','italic','underline','clear']],['para',['ul','ol']],['insert',['link']],['view',['fullscreen','codeview']]], placeholder:'Describe your issue…' });
+    $('#attachments').on('change',function(){
+        const max=5*1024*1024;
+        for(const f of this.files){ if(f.size>max){ alert(`"${f.name}" exceeds 5 MB`); this.value=''; return; } }
+    });
+});
+</script>
+</body></html>

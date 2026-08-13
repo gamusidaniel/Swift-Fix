@@ -1,0 +1,115 @@
+<%- include('../partials/head', { title: ticket.ticket_number }) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-header">
+    <div>
+        <div class="page-title"><%= ticket.title %></div>
+        <div class="page-subtitle">Created by <%= ticket.created_first_name %> <%= ticket.created_last_name %> on <%= new Date(ticket.created_at).toLocaleDateString() %></div>
+    </div>
+    <div class="d-flex gap-2">
+        <% if (ticket.user_id === currentUser.id && ticket.status === 'open') { %>
+        <a href="/tickets/<%= ticket.id %>/edit" class="btn btn-outline-secondary"><i class="fas fa-edit me-1"></i>Edit</a>
+        <% } %>
+        <a href="/tickets/mine" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Back</a>
+    </div>
+</div>
+
+<%- include('../partials/alerts', { success, error, errors: null }) %>
+
+<div class="mb-3">
+    <span class="badge-pill p-<%= ticket.priority %>"><%= ticket.priority %></span>
+    <span class="badge-pill s-<%= ticket.status %>"><%= ticket.status.replace('_',' ') %></span>
+    <span class="cat-pill"><%= ticket.category %></span>
+    <span class="ticket-num"><%= ticket.ticket_number %></span>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="section-card mb-4">
+            <div class="section-header"><span class="section-title">Description</span></div>
+            <div class="section-body"><%- ticket.descriptionHtml %></div>
+        </div>
+
+        <div class="section-card mb-4">
+            <div class="section-header"><span class="section-title">Comments (<%= comments.length %>)</span></div>
+            <div class="section-body">
+                <% comments.forEach(c => { %>
+                <div class="mb-3 pb-3" style="border-bottom:1px solid var(--border);">
+                    <div class="d-flex justify-content-between">
+                        <strong><%= c.first_name %> <%= c.last_name %> <span style="color:var(--text-3); font-weight:400;">(<%= c.role.replace('_',' ') %>)</span></strong>
+                        <span style="color:var(--text-3); font-size:.75rem;"><%= new Date(c.created_at).toLocaleString() %></span>
+                    </div>
+                    <% if (c.is_internal) { %><span class="badge-pill s-on_hold">Internal</span><% } %>
+                    <div><%- c.commentHtml %></div>
+                </div>
+                <% }) %>
+                <% if (comments.length === 0) { %><p style="color:var(--text-3);">No comments yet.</p><% } %>
+
+                <form method="POST" action="/tickets/<%= ticket.id %>/comment" class="mt-3">
+                    <div class="mb-2">
+                        <textarea class="form-control" name="comment" rows="3" required placeholder="Add a comment…"></textarea>
+                    </div>
+                    <% if (isITStaff) { %>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="is_internal" value="1" id="isInternal">
+                        <label class="form-check-label" for="isInternal">Internal note (not visible to requester)</label>
+                    </div>
+                    <% } %>
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-paper-plane me-1"></i>Post Comment</button>
+                </form>
+            </div>
+        </div>
+
+        <% if (attachments.length) { %>
+        <div class="section-card mb-4">
+            <div class="section-header"><span class="section-title">Attachments (<%= attachments.length %>)</span></div>
+            <div class="section-body">
+                <% attachments.forEach(a => { %>
+                <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--border);">
+                    <div><i class="fas fa-paperclip me-2"></i><%= a.file_name %> <span style="color:var(--text-3); font-size:.75rem;">(<%= Math.round(a.file_size/1024) %> KB)</span></div>
+                    <a href="<%= a.file_path %>" class="btn btn-outline-primary btn-sm" download><i class="fas fa-download"></i></a>
+                </div>
+                <% }) %>
+            </div>
+        </div>
+        <% } %>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="section-card mb-4">
+            <div class="section-header"><span class="section-title">Ticket Info</span></div>
+            <div class="section-body">
+                <div class="mb-2"><strong>Requester:</strong> <%= ticket.created_first_name %> <%= ticket.created_last_name %> (<%= ticket.created_email %>)</div>
+                <div class="mb-2"><strong>Department:</strong> <%= ticket.created_department || '—' %></div>
+                <div class="mb-2"><strong>Assigned To:</strong>
+                    <% if (ticket.assigned_username) { %><%= ticket.assigned_first_name %> <%= ticket.assigned_last_name %>
+                    <% } else { %><span style="color:var(--text-3); font-style:italic;">Unassigned</span><% } %>
+                </div>
+                <div class="mb-2"><strong>Due Date:</strong> <%= ticket.due_date ? new Date(ticket.due_date).toLocaleDateString() : '—' %></div>
+            </div>
+        </div>
+
+        <% if (isITStaff) { %>
+        <div class="section-card mb-4">
+            <div class="section-header"><span class="section-title">Update Status</span></div>
+            <div class="section-body">
+                <form method="POST" action="/tickets/<%= ticket.id %>/status">
+                    <select class="form-select mb-2" name="status">
+                        <% STATUSES.forEach(s => { %>
+                        <option value="<%= s %>" <%= ticket.status===s?'selected':'' %>><%= s.replace('_',' ') %></option>
+                        <% }) %>
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Update</button>
+                </form>
+            </div>
+        </div>
+        <% if (!ticket.assigned_username) { %>
+        <div class="alert alert-info">This ticket is unassigned. <a href="/tickets/unassigned">Assign it to yourself</a> from the Unassigned Tickets page.</div>
+        <% } %>
+        <% } %>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
+<script>window.printTicket = () => window.print();</script>
+</body></html>

@@ -1,0 +1,81 @@
+<%- include('../partials/head', { title: 'Assigned Tickets' }) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-header">
+    <div>
+        <div class="page-title"><i class="fas fa-tasks me-2" style="color:var(--brand);"></i>Assigned Tickets</div>
+        <div class="page-subtitle">Tickets currently assigned to you</div>
+    </div>
+    <a href="/tickets/unassigned" class="btn btn-outline-primary"><i class="fas fa-inbox me-1"></i> Unassigned (<%= unassignedCount %>)</a>
+</div>
+
+<%- include('../partials/alerts', { success, error, errors: null }) %>
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-blue"><div><div class="stat-label">Total</div><div class="stat-value"><%= stats.total || 0 %></div></div><div class="stat-icon-wrap si-blue"><i class="fas fa-ticket-alt"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-amber"><div><div class="stat-label">Open</div><div class="stat-value"><%= stats.open || 0 %></div></div><div class="stat-icon-wrap si-amber"><i class="fas fa-clock"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-indigo"><div><div class="stat-label">In Progress</div><div class="stat-value"><%= stats.in_progress || 0 %></div></div><div class="stat-icon-wrap si-indigo"><i class="fas fa-spinner"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-green"><div><div class="stat-label">Resolved</div><div class="stat-value"><%= stats.resolved || 0 %></div></div><div class="stat-icon-wrap si-green"><i class="fas fa-check-circle"></i></div></div></div>
+</div>
+
+<div class="section-card mb-4">
+    <div class="section-body" style="padding:14px 20px;">
+        <form method="GET" action="/tickets/assigned" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="all" <%= filters.status==='all'?'selected':'' %>>All Statuses</option>
+                    <% STATUSES.forEach(s => { %><option value="<%= s %>" <%= filters.status===s?'selected':'' %>><%= s.replace('_',' ') %></option><% }) %>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Priority</label>
+                <select name="priority" class="form-select form-select-sm">
+                    <option value="all" <%= filters.priority==='all'?'selected':'' %>>All Priorities</option>
+                    <% PRIORITIES.forEach(p => { %><option value="<%= p %>" <%= filters.priority===p?'selected':'' %>><%= p %></option><% }) %>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" class="form-control form-control-sm" value="<%= filters.search %>" placeholder="Title or ticket #">
+            </div>
+            <div class="col-md-2"><button type="submit" class="btn btn-primary btn-sm w-100"><i class="fas fa-filter me-1"></i>Filter</button></div>
+        </form>
+    </div>
+</div>
+
+<div class="section-card mb-4">
+    <div class="section-header"><span class="section-title">Tickets (<%= tickets.length %>)</span></div>
+    <% if (tickets.length === 0) { %>
+    <div class="empty-state"><i class="fas fa-inbox"></i><h5>No assigned tickets</h5></div>
+    <% } else { %>
+    <div class="tbl-wrap">
+        <table class="ms-table" id="assignedTable">
+            <thead><tr><th>Ticket #</th><th>Title</th><th>Requester</th><th>Priority</th><th>Status</th><th>Created</th><th></th></tr></thead>
+            <tbody>
+                <% tickets.forEach(t => { %>
+                <tr>
+                    <td><span class="ticket-num"><%= t.ticket_number %></span></td>
+                    <td><a href="/tickets/<%= t.id %>" class="ticket-link"><%= t.title %></a></td>
+                    <td><%= t.requester_first_name %> <%= t.requester_last_name %></td>
+                    <td><span class="badge-pill p-<%= t.priority %>"><%= t.priority %></span></td>
+                    <td>
+                        <form method="POST" action="/tickets/assigned/<%= t.id %>/status" class="d-inline">
+                            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()" style="width:auto; display:inline-block;">
+                                <% STATUSES.forEach(s => { %><option value="<%= s %>" <%= t.status===s?'selected':'' %>><%= s.replace('_',' ') %></option><% }) %>
+                            </select>
+                        </form>
+                    </td>
+                    <td style="white-space:nowrap;"><%= new Date(t.created_at).toLocaleDateString() %></td>
+                    <td><a href="/tickets/<%= t.id %>" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i></a></td>
+                </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+    <% } %>
+</div>
+
+<%- include('../partials/footer') %>
+<script>$(()=>{ if ($('#assignedTable').length) $('#assignedTable').DataTable({ pageLength:25, order:[[3,'asc']] }); });</script>
+</body></html>

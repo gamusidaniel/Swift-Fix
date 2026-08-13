@@ -1,0 +1,199 @@
+<%- include('../partials/head', { title: 'Admin Panel' }) %>
+<%- include('../partials/navbar') %>
+
+<div class="page-header">
+    <div>
+        <div class="page-title"><i class="fas fa-cogs me-2" style="color:var(--brand);"></i>Admin Panel</div>
+        <div class="page-subtitle">Manage tickets and users</div>
+    </div>
+    <a href="/register" class="btn btn-primary"><i class="fas fa-user-plus me-1"></i> Add User</a>
+</div>
+
+<%- include('../partials/alerts', { success, error, errors: null }) %>
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-blue"><div><div class="stat-label">Total Users</div><div class="stat-value"><%= stats.total_users %></div></div><div class="stat-icon-wrap si-blue"><i class="fas fa-users"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-indigo"><div><div class="stat-label">Total Tickets</div><div class="stat-value"><%= stats.total_tickets %></div></div><div class="stat-icon-wrap si-indigo"><i class="fas fa-ticket-alt"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-amber"><div><div class="stat-label">Open Tickets</div><div class="stat-value"><%= stats.open_tickets %></div></div><div class="stat-icon-wrap si-amber"><i class="fas fa-clock"></i></div></div></div>
+    <div class="col-xl-3 col-sm-6"><div class="stat-card c-green"><div><div class="stat-label">Resolved</div><div class="stat-value"><%= stats.resolved_tickets %></div></div><div class="stat-icon-wrap si-green"><i class="fas fa-check-circle"></i></div></div></div>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="adminTabs">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tickets-tab">Tickets</button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#users-tab">Users</button></li>
+</ul>
+
+<div class="tab-content">
+<div class="tab-pane fade show active" id="tickets-tab">
+    <div class="section-card mb-4">
+        <div class="tbl-wrap">
+            <table class="ms-table" id="ticketsTable">
+                <thead><tr><th>Ticket #</th><th>Title</th><th>Requester</th><th>Priority</th><th>Status</th><th>Assigned</th><th></th></tr></thead>
+                <tbody>
+                    <% tickets.forEach(t => { %>
+                    <tr>
+                        <td><span class="ticket-num"><%= t.ticket_number %></span></td>
+                        <td><a href="/tickets/<%= t.id %>" class="ticket-link"><%= t.title %></a></td>
+                        <td><%= t.requester_first_name %> <%= t.requester_last_name %></td>
+                        <td><span class="badge-pill p-<%= t.priority %>"><%= t.priority %></span></td>
+                        <td><span class="badge-pill s-<%= t.status %>"><%= t.status.replace('_',' ') %></span></td>
+                        <td><% if (t.assigned_first_name) { %><%= t.assigned_first_name %> <%= t.assigned_last_name %><% } else { %><span style="color:var(--text-3);font-style:italic;">Unassigned</span><% } %></td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="/tickets/<%= t.id %>"><i class="fas fa-eye"></i> View</a></li>
+                                    <% if (!t.assigned_first_name) { %>
+                                    <li>
+                                        <form method="POST" action="/admin/tickets/<%= t.id %>/assign">
+                                            <button type="submit" class="dropdown-item"><i class="fas fa-hand-paper"></i> Assign to me</button>
+                                        </form>
+                                    </li>
+                                    <% } %>
+                                    <% if (!['resolved','closed'].includes(t.status)) { %>
+                                    <li>
+                                        <form method="POST" action="/admin/tickets/<%= t.id %>/resolve">
+                                            <button type="submit" class="dropdown-item"><i class="fas fa-check"></i> Mark Resolved</button>
+                                        </form>
+                                    </li>
+                                    <% } %>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="tab-pane fade" id="users-tab">
+    <div class="section-card mb-4">
+        <div class="tbl-wrap">
+            <table class="ms-table" id="usersTable">
+                <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Department</th><th>Role</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    <% users.forEach(u => { %>
+                    <tr>
+                        <td><%= u.first_name %> <%= u.last_name %></td>
+                        <td><%= u.username %></td>
+                        <td><%= u.email %></td>
+                        <td><%= u.department || '—' %></td>
+                        <td><span class="badge-pill p-medium"><%= u.role.replace('_',' ') %></span></td>
+                        <td><span class="badge-pill <%= u.status==='active'?'s-resolved':'s-cancelled' %>"><%= u.status %></span></td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                    data-id="<%= u.id %>" data-first_name="<%= u.first_name %>" data-last_name="<%= u.last_name %>"
+                                    data-email="<%= u.email %>" data-phone="<%= u.phone||'' %>" data-role="<%= u.role %>"
+                                    data-status="<%= u.status %>" data-department="<%= u.department||'' %>" data-self="<%= u.id===currentUserId %>">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#resetPasswordModal" data-id="<%= u.id %>">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                                <% if (u.id !== currentUserId) { %>
+                                <form method="POST" action="/admin/users/<%= u.id %>/delete" onsubmit="return confirm('Delete this user?');" class="d-inline">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                </form>
+                                <% } else { %>
+                                <span class="badge-pill s-in_progress">You</span>
+                                <% } %>
+                            </div>
+                        </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" id="editUserForm" action="">
+        <div class="modal-header"><h5 class="modal-title">Edit User</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="row g-2 mb-2">
+                <div class="col-6"><label class="form-label">First Name</label><input class="form-control" name="first_name" id="ef_first_name" required></div>
+                <div class="col-6"><label class="form-label">Last Name</label><input class="form-control" name="last_name" id="ef_last_name" required></div>
+            </div>
+            <div class="mb-2"><label class="form-label">Email</label><input class="form-control" type="email" name="email" id="ef_email" required></div>
+            <div class="mb-2"><label class="form-label">Phone</label><input class="form-control" name="phone" id="ef_phone"></div>
+            <div class="mb-2"><label class="form-label">Department</label><input class="form-control" name="department" id="ef_department"></div>
+            <div class="mb-2"><label class="form-label">Role</label>
+                <select class="form-select" name="role" id="ef_role">
+                    <option value="user">User</option><option value="it_staff">IT Staff</option><option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="mb-2"><label class="form-label">Status</label>
+                <select class="form-select" name="status" id="ef_status">
+                    <option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option>
+                </select>
+                <input type="hidden" name="status_fallback" id="ef_status_fallback">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" id="resetPasswordForm" action="">
+        <div class="modal-header"><h5 class="modal-title">Reset Password</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="mb-2"><label class="form-label">New Password</label><input class="form-control" type="password" name="new_password" minlength="8" required></div>
+            <div class="mb-2"><label class="form-label">Confirm Password</label><input class="form-control" type="password" name="confirm_password" minlength="8" required></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Reset Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
+<script>
+$(()=>{
+    if ($('#ticketsTable').length) $('#ticketsTable').DataTable({ pageLength:25 });
+    if ($('#usersTable').length) $('#usersTable').DataTable({ pageLength:25 });
+
+    if (location.hash === '#users') new bootstrap.Tab(document.querySelector('[data-bs-target="#users-tab"]')).show();
+    document.querySelectorAll('#adminTabs button').forEach(btn => {
+        btn.addEventListener('shown.bs.tab', e => { history.replaceState(null, '', e.target.dataset.bsTarget.replace('-tab','').replace('#','#')); });
+    });
+
+    document.getElementById('editUserModal').addEventListener('show.bs.modal', e => {
+        const b = e.relatedTarget, d = b.dataset;
+        document.getElementById('editUserForm').action = '/admin/users/' + d.id;
+        document.getElementById('ef_first_name').value = d.first_name;
+        document.getElementById('ef_last_name').value = d.last_name;
+        document.getElementById('ef_email').value = d.email;
+        document.getElementById('ef_phone').value = d.phone;
+        document.getElementById('ef_department').value = d.department;
+        document.getElementById('ef_role').value = d.role;
+        document.getElementById('ef_status').value = d.status;
+        document.getElementById('ef_status_fallback').value = d.status;
+        const statusSelect = document.getElementById('ef_status');
+        if (d.self === 'true') { statusSelect.disabled = true; } else { statusSelect.disabled = false; }
+    });
+
+    document.getElementById('resetPasswordModal').addEventListener('show.bs.modal', e => {
+        document.getElementById('resetPasswordForm').action = '/admin/users/' + e.relatedTarget.dataset.id + '/reset-password';
+    });
+});
+</script>
+</body></html>

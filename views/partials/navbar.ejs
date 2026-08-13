@@ -1,0 +1,70 @@
+<header class="topbar">
+    <a class="topbar-brand" href="/dashboard">
+        <img src="/public/img/2.png" alt="Swift Fix">
+        <span>Swift Fix</span>
+    </a>
+    <button class="icon-btn d-lg-none ms-2" id="sidebarToggle" style="border:none; background:none;">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-actions">
+        <div class="dropdown">
+            <button class="icon-btn" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-bell"></i>
+                <% if (isITStaff && unreadNotifications > 0) { %>
+                    <span class="notif-badge"><%= unreadNotifications %></span>
+                <% } %>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><h6 class="dropdown-header">Notifications</h6></li>
+                <li><a class="dropdown-item" href="/profile"><i class="fas fa-user"></i>My Profile</a></li>
+                <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+            </ul>
+        </div>
+        <div class="dropdown ms-2">
+            <a class="user-chip" data-bs-toggle="dropdown" href="#">
+                <div class="user-chip-avatar"><%= (currentUser.first_name || currentUser.username).charAt(0).toUpperCase() %></div>
+                <span class="user-chip-name d-none d-sm-block"><%= currentUser.first_name || currentUser.username %></span>
+                <i class="fas fa-chevron-down" style="font-size:.6rem; color:var(--text-3); margin-left:2px;"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+            </ul>
+        </div>
+    </div>
+</header>
+
+<div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-inner">
+            <div class="sidebar-user">
+                <div class="sb-avatar"><%= (currentUser.first_name || currentUser.username).charAt(0).toUpperCase() %></div>
+                <div>
+                    <div class="sb-user-name"><%= currentUser.first_name %> <%= currentUser.last_name %></div>
+                    <div class="sb-user-role"><%= (currentUser.role || '').replace('_',' ').replace(/^\w/, c => c.toUpperCase()) %></div>
+                </div>
+            </div>
+
+            <div class="nav-section-label">Main</div>
+            <ul class="sb-nav">
+                <li><a href="/dashboard" class="<%= activePath==='/dashboard'?'active':'' %>"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+                <li><a href="/tickets/new" class="<%= activePath==='/tickets/new'?'active':'' %>"><i class="fas fa-plus-circle"></i><span>New Ticket</span></a></li>
+                <li><a href="/tickets/mine" class="<%= activePath==='/tickets/mine'?'active':'' %>"><i class="fas fa-ticket-alt"></i><span>My Tickets</span></a></li>
+                <% if (isITStaff) { %>
+                <li><a href="/tickets/assigned" class="<%= activePath==='/tickets/assigned'?'active':'' %>"><i class="fas fa-tasks"></i><span>Assigned Tickets</span></a></li>
+                <li><a href="/tickets/unassigned" class="<%= activePath==='/tickets/unassigned'?'active':'' %>"><i class="fas fa-inbox"></i><span>Unassigned Tickets</span></a></li>
+                <% } %>
+            </ul>
+
+            <% if (isAdmin) { %>
+            <div class="nav-section-label">Admin</div>
+            <ul class="sb-nav">
+                <li><a href="/admin" class="<%= activePath==='/admin'?'active':'' %>"><i class="fas fa-cogs"></i><span>Admin Panel</span></a></li>
+                <li><a href="/register" class="<%= activePath==='/register'?'active':'' %>"><i class="fas fa-user-plus"></i><span>Add User</span></a></li>
+            </ul>
+            <% } %>
+        </div>
+    </aside>
+
+    <div class="main-wrap">
+        <main class="page-body">
