@@ -1,4 +1,9 @@
 -- Swift Fix — core-slice schema (Postgres / Supabase)
+-- Isolated in its own schema since this Supabase project also hosts an
+-- unrelated HR app's tables in `public` (users, departments, etc.).
+
+CREATE SCHEMA IF NOT EXISTS swift_fix;
+SET search_path TO swift_fix;
 
 CREATE TABLE IF NOT EXISTS departments (
     id SERIAL PRIMARY KEY,
